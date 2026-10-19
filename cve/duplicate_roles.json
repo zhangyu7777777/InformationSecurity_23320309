@@ -1,0 +1,7 @@
+{
+  "type": "user",
+  "name": "vulhub",
+  "roles": ["_admin"],
+  "roles": [],
+  "password": "vulhub"
+}

@@ -8,15 +8,13 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app ./app
-COPY run.py .
+COPY app.py .
 
-RUN useradd --create-home --shell /usr/sbin/nologin appuser \
-    && mkdir -p /app/instance \
-    && chown -R appuser:appuser /app
+RUN mkdir -p /app/data
 
-USER appuser
+ENV DATABASE=/app/data/app.db
+ENV JWT_SECRET=change-me
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--access-logfile", "-", "run:app"]
+CMD ["python", "app.py"]

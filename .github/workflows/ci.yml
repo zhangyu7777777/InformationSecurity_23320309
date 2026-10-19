@@ -30,8 +30,8 @@ jobs:
       - name: SAST - Bandit
         run: |
           mkdir -p reports
-          bandit -r app -f json -o reports/bandit.json
-          bandit -r app -f txt
+          bandit app.py -f json -o reports/bandit.json
+          bandit app.py -f txt
 
       - name: SCA - pip-audit
         run: |
