@@ -126,9 +126,9 @@ python -m pip_audit -r requirements.txt
 git init
 git add .
 git commit -m "Work 1: secure API, CI scans, CVE-2021-41773 analysis"
-git branch -M main
+git branch -M master
 git remote add origin https://gitlab.se.ifmo.ru/<your-account>/<repo>.git
-git push -u origin main
+git push -u origin master
 ```
 
 打开仓库的 **Build → Pipelines**，等 `test`、`bandit`、`pip-audit` 三个
