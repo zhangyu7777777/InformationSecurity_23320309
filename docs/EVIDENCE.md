@@ -188,3 +188,47 @@ page, so the fix does not break the service.
 ![Fixed environments and regression test](screenshots/cve-after.png)
 
 ![Local API security checks](screenshots/api-local.png)
+
+## 6. GitHub Actions evidence
+
+Repository:
+<https://github.com/zhangyu7777777/InformationSecurity_23320309>
+
+Successful run:
+<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39196824807>
+
+Run summary:
+
+```text
+Workflow: Secure API CI
+Run: #1
+Branch: main
+Commit: 63e066b
+Status: Success
+Duration: 32s
+Artifact: security-reports
+```
+
+Job steps:
+
+```text
+Run unit and security tests  success  (16 passed)
+SAST - Bandit                success  (No issues identified)
+SCA - pip-audit              success  (No known vulnerabilities found)
+Upload security reports      success
+```
+
+Artifact contents:
+
+```text
+bandit.json      1683 bytes   "results": [], all severities 0
+pip-audit.json    576 bytes   all dependencies have "vulns": []
+```
+
+### 6.1 Evidence images
+
+![GitHub Actions run](screenshots/ci-success.png)
+
+![Bandit SAST step](screenshots/bandit.png)
+
+![pip-audit SCA step](screenshots/pip-audit.png)

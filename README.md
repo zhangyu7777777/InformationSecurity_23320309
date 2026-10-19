@@ -233,6 +233,9 @@ No known vulnerabilities found
 The pipeline is GitHub Actions (`.github/workflows/ci.yml`). It runs on every
 push and pull request:
 
+Successful run #1:
+<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39196824807>
+
 1. installs dependencies;
 2. runs `pytest`;
 3. runs **Bandit** SAST and writes `reports/bandit.json`;
@@ -249,13 +252,11 @@ After pushing the repository:
 3. Open the **Artifacts** section and download `security-reports`.
 4. Screenshot the Bandit and pip-audit output.
 
-Add the images to `docs/screenshots/` and reference them here:
-
-```markdown
 ![GitHub Actions pipeline](docs/screenshots/ci-success.png)
+
 ![Bandit report](docs/screenshots/bandit.png)
+
 ![pip-audit report](docs/screenshots/pip-audit.png)
-```
 
 ## 6. CVE analysis: CVE-2021-41773
 
@@ -391,7 +392,8 @@ Store the reproduction and fix screenshots in `docs/screenshots/`:
 
 - [x] Public GitHub repository:
   <https://github.com/zhangyu7777777/InformationSecurity_23320309>
-- [ ] Last successful pipeline URL: `<add URL>`
+- [x] Last successful pipeline:
+  <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39196824807>
 - [ ] README includes API, security measures, CI, CVE, root cause, fix, proof
 - [ ] Screenshots of SAST/SCA reports added to `docs/screenshots/`
 - [ ] CVE reproduction screenshots added

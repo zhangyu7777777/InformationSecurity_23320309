@@ -10,7 +10,7 @@
 | Group | `<group>` |
 | Date | 2026-10-19 |
 | Repository | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
-| Successful pipeline | `<GitHub Actions run URL>` |
+| Successful pipeline | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39196824807> |
 
 ---
 
@@ -141,11 +141,11 @@ No known vulnerabilities found
 
 ### CI screenshots
 
-`<insert screenshot of the green GitHub Actions run>`
+![GitHub Actions run](docs/screenshots/ci-success.png)
 
-`<insert screenshot of the Bandit report>`
+![Bandit SAST step](docs/screenshots/bandit.png)
 
-`<insert screenshot of the pip-audit report>`
+![pip-audit SCA step](docs/screenshots/pip-audit.png)
 
 ## 6. CVE analysis
 
@@ -331,9 +331,9 @@ patches.
 
 ## Appendix B. Submission checklist
 
-- [ ] Public repository URL added to the title page.
-- [ ] Last successful pipeline URL added.
-- [ ] CI screenshots inserted.
-- [ ] CVE reproduction and fix screenshots inserted.
+- [x] Public repository URL added to the title page.
+- [x] Last successful pipeline URL added.
+- [x] CI screenshots inserted.
+- [x] CVE reproduction and fix screenshots inserted.
 - [ ] Variant, surname, name, and HDU number filled in.
-- [ ] `cve/fixed-hardened/` attached.
+- [x] `cve/fixed-hardened/` included in the repository.
