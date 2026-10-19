@@ -1,0 +1,6 @@
+services:
+  apache:
+    build: .
+    ports:
+      - "8082:80"
+    restart: unless-stopped

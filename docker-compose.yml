@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRES_MINUTES: ${JWT_EXPIRES_MINUTES:-30}
+      DATABASE: /app/instance/secure_api.sqlite3
+    volumes:
+      - api-data:/app/instance
+    restart: unless-stopped
+
+volumes:
+  api-data:
