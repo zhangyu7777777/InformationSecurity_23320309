@@ -4,10 +4,10 @@
 
 | Field | Value |
 |---|---|
-| Variant number | `<variant>` |
-| Student surname and name | `<Surname Name>` |
-| HDU number | `<HDU number>` |
-| Group | `<group>` |
+| Variant number | CVE-2017-12635 |
+| Student surname and name | Guo Ruihao |
+| HDU number | 23320309 |
+| Group | — |
 | Date | 2026-10-19 |
 | Repository | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
 | CI run | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39197917908> |
@@ -216,4 +216,4 @@ works.
 - [x] API source code and tests.
 - [x] CVE reproduction and fix.
 - [x] Evidence screenshots.
-- [ ] Variant, surname, name, and HDU number filled in.
+- [x] Variant, surname, name, and HDU number filled in.
