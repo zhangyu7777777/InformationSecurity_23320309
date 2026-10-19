@@ -9,8 +9,8 @@
 | HDU number | `<HDU number>` |
 | Group | `<group>` |
 | Date | 2026-10-19 |
-| Repository | <https://gitlab.se.ifmo.ru/guoruihao/informationsecurity_23320309> |
-| Successful pipeline | `<GitLab pipeline URL>` |
+| Repository | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
+| Successful pipeline | `<GitHub Actions run URL>` |
 
 ---
 
@@ -29,7 +29,7 @@ and verify both the security fix and the preserved functionality.
 - Flask 3.1.3, bcrypt 5.0.0, PyJWT 2.15.1
 - SQLite 3
 - pytest 8.4.2, Bandit 1.8.6, pip-audit 2.9.0
-- Git 2.56.0, GitLab CI
+- Git 2.56.0, GitHub Actions
 - Docker Desktop and Docker Compose (for the CVE part)
 
 ## 3. API implementation
@@ -112,7 +112,7 @@ Deleting a post requires the current user to be its author or to have the
 
 ## 5. CI/CD
 
-`.gitlab-ci.yml` runs on every push and merge request:
+`.github/workflows/ci.yml` runs on every push and pull request:
 
 | Stage | Tool | Result |
 |---|---|---|
@@ -120,8 +120,8 @@ Deleting a post requires the current user to be its author or to have the
 | SAST | Bandit | no issues identified |
 | SCA | pip-audit | no known vulnerabilities |
 
-The pipeline uploads `reports/bandit.json` and `reports/pip-audit.json` as job
-artifacts even when a scan fails.
+The workflow uploads `reports/bandit.json` and `reports/pip-audit.json` as the
+`security-reports` artifact even when a scan fails.
 
 ### Local evidence
 
@@ -141,7 +141,7 @@ No known vulnerabilities found
 
 ### CI screenshots
 
-`<insert screenshot of the green GitLab pipeline>`
+`<insert screenshot of the green GitHub Actions run>`
 
 `<insert screenshot of the Bandit report>`
 
