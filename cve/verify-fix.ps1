@@ -1,5 +1,8 @@
 $ErrorActionPreference = "Stop"
 
+$dockerBin = "C:\Program Files\Docker\Docker\resources\bin"
+if (Test-Path $dockerBin) { $env:PATH = "$dockerBin;$env:PATH" }
+
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $vulhubRoot = Join-Path $repoRoot "vulhub"
 
@@ -46,9 +49,9 @@ Push-Location (Join-Path $PSScriptRoot "fixed-hardened")
 try { docker compose up -d --build } finally { Pop-Location }
 
 $results = @(
-    Test-Target "Vulhub 2.4.49" "http://localhost:8080"
-    Test-Target "2.4.51 permissive" "http://localhost:8081"
-    Test-Target "2.4.51 hardened" "http://localhost:8082"
+    Test-Target "Vulhub 2.4.49" "http://127.0.0.1:8080"
+    Test-Target "2.4.51 permissive" "http://127.0.0.1:8081"
+    Test-Target "2.4.51 hardened" "http://127.0.0.1:8082"
 )
 
 $results | Format-Table -AutoSize

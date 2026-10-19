@@ -1,8 +1,11 @@
 $ErrorActionPreference = "Stop"
 
+$dockerBin = "C:\Program Files\Docker\Docker\resources\bin"
+if (Test-Path $dockerBin) { $env:PATH = "$dockerBin;$env:PATH" }
+
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $vulhubRoot = Join-Path $repoRoot "vulhub"
-$target = "http://localhost:8080"
+$target = "http://127.0.0.1:8080"
 
 if (-not (Test-Path (Join-Path $vulhubRoot "httpd/CVE-2021-41773"))) {
     Write-Host "[*] Cloning the Vulhub sparse checkout..." -ForegroundColor Cyan
