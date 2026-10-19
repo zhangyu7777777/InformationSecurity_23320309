@@ -117,25 +117,27 @@ python -m pip_audit -r requirements.txt
 - Bandit 输出 `No issues identified`；
 - pip-audit 输出 `No known vulnerabilities found`。
 
-## 第 6 步：推送到 GitHub，让 CI 跑起来
+## 第 6 步：推送到 GitLab，让 CI 跑起来
 
-先在 GitHub 创建空仓库（不要勾选自动生成 README），然后：
+提交仓库在 `gitlab.se.ifmo.ru`，所以使用仓库根目录的 `.gitlab-ci.yml`。
+先创建空仓库（不要勾选自动生成 README），然后：
 
 ```powershell
 git init
 git add .
 git commit -m "Work 1: secure API, CI scans, CVE-2021-41773 analysis"
 git branch -M main
-git remote add origin https://github.com/<your-account>/<repo>.git
+git remote add origin https://gitlab.se.ifmo.ru/<your-account>/<repo>.git
 git push -u origin main
 ```
 
-打开仓库的 **Actions** 页面，等 `Secure API CI` 变绿。进去后：
+打开仓库的 **Build → Pipelines**，等 `test`、`bandit`、`pip-audit` 三个
+job 变绿。进去后：
 
 1. 截整页图，证明 pipeline 成功；
-2. 点开 Bandit 步骤截图；
-3. 点开 pip-audit 步骤截图；
-4. 下载 `security-reports` artifact，再截一张。
+2. 点开 `bandit` job 截图；
+3. 点开 `pip-audit` job 截图；
+4. 点开 **Browse artifacts**，再截一张 JSON 报告。
 
 把这些图放到 `docs/screenshots/`，在 README 和报告里引用。手册明确要求
 CI 报告截图，这一步不能省。

@@ -5,7 +5,7 @@ Laboratory work 1 for the HDU Information Security course.
 This repository contains two deliverables:
 
 1. A small but complete Flask REST API with authentication, SQLi/XSS
-   protection, automated tests, and a GitHub Actions security pipeline.
+   protection, automated tests, and a GitLab CI security pipeline.
 2. A reproducible analysis of **CVE-2021-41773** (Apache HTTP Server 2.4.49
    path traversal / file disclosure / optional RCE) using Vulhub, including a
    patched environment and a verification script.
@@ -20,7 +20,7 @@ This repository contains two deliverables:
 - `bcrypt` for password hashing
 - `PyJWT` for signed access tokens
 - `pytest` for functional and security regression tests
-- Bandit (SAST) and `pip-audit` (SCA) in GitHub Actions
+- Bandit (SAST) and `pip-audit` (SCA) in GitLab CI
 - Docker / Docker Compose for the CVE environment
 
 ```text
@@ -33,7 +33,8 @@ secure-api/
 ├── tests/                # 16 functional and security tests
 ├── cve/                  # Vulhub reproduction, fixed images, verification script
 ├── docs/                 # evidence and step-by-step guide
-├── .github/workflows/ci.yml
+├── .gitlab-ci.yml        # active CI pipeline
+├── .github/workflows/ci.yml  # equivalent GitHub Actions pipeline
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
@@ -230,30 +231,32 @@ No known vulnerabilities found
 
 ![Local security checks](docs/screenshots/api-local.png)
 
-The GitHub Actions workflow `.github/workflows/ci.yml` runs on every push and
-pull request:
+The active pipeline is GitLab CI (`.gitlab-ci.yml`), because the submission
+repository is hosted on `gitlab.se.ifmo.ru`. An equivalent GitHub Actions
+workflow is also included for portability.
+
+The pipeline runs on every push and merge request:
 
 1. installs dependencies;
 2. runs `pytest`;
 3. runs **Bandit** SAST and writes `reports/bandit.json`;
 4. runs **pip-audit** SCA and writes `reports/pip-audit.json`;
-5. uploads both reports as the `security-reports` artifact even if a step
-   fails.
+5. uploads the JSON reports as job artifacts even if a scan fails.
 
-### Screenshots from GitHub Actions
+### Screenshots from GitLab CI
 
-After pushing the repository:
+After the pipeline finishes:
 
-1. Open the **Actions** tab and select the latest successful **Secure API CI**
-   run.
-2. Screenshot the green job summary.
-3. Open the **Artifacts** section and download `security-reports`.
-4. Screenshot the Bandit and pip-audit output.
+1. Open **Build → Pipelines** and select the latest successful pipeline.
+2. Screenshot the pipeline graph (all three jobs green).
+3. Open the `bandit` job and screenshot its log.
+4. Open the `pip-audit` job and screenshot its log.
+5. Optionally open **Browse artifacts** and screenshot the JSON reports.
 
 Add the images to `docs/screenshots/` and reference them here:
 
 ```markdown
-![CI pipeline](docs/screenshots/ci-success.png)
+![GitLab CI pipeline](docs/screenshots/ci-success.png)
 ![Bandit report](docs/screenshots/bandit.png)
 ![pip-audit report](docs/screenshots/pip-audit.png)
 ```
@@ -407,6 +410,7 @@ Store the reproduction and fix screenshots in `docs/screenshots/`:
   <https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html>
 - JWT introduction: <https://jwt.io/introduction>
 - GitHub Actions: <https://docs.github.com/en/actions>
+- GitLab CI/CD: <https://docs.gitlab.com/ee/ci/>
 - Vulhub: <https://github.com/vulhub/vulhub>
 - NVD CVE-2021-41773: <https://nvd.nist.gov/vuln/detail/CVE-2021-41773>
 - Apache 2.4 vulnerabilities:
