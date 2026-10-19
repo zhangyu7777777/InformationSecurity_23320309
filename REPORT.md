@@ -7,10 +7,10 @@
 | Variant number | CVE-2017-12635 |
 | Student surname and name | Guo Ruihao |
 | HDU number | 23320309 |
-| Group | — |
+| Group | - |
 | Date | 2026-10-19 |
 | Repository | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
-| CI run | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39197917908> |
+| CI run | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39198377166> |
 
 ## 1. Purpose
 
@@ -87,7 +87,7 @@ The Bandit and pip-audit JSON reports are uploaded as the
 `security-reports` artifact.
 
 Successful run:
-<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39197917908>
+<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39198377166>
 
 ## 6. CVE-2017-12635
 
