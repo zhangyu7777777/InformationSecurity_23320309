@@ -4,7 +4,9 @@ stages:
   - sca
 
 default:
-  image: python:3.11-slim
+  image:
+    name: python:3.11-slim
+    pull_policy: if-not-present
   interruptible: true
   cache:
     key:
