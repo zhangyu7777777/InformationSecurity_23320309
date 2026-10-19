@@ -9,7 +9,7 @@
 | HDU number | `<HDU number>` |
 | Group | `<group>` |
 | Date | 2026-10-19 |
-| Repository | `<public GitHub/GitLab URL>` |
+| Repository | <https://gitlab.se.ifmo.ru/guoruihao/informationsecurity_23320309> |
 | Successful pipeline | `<GitLab pipeline URL>` |
 
 ---

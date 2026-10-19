@@ -393,7 +393,8 @@ Store the reproduction and fix screenshots in `docs/screenshots/`:
 
 ## 7. Submission checklist
 
-- [ ] Public GitHub/GitLab repository URL: `<add URL>`
+- [x] Public GitLab repository:
+  <https://gitlab.se.ifmo.ru/guoruihao/informationsecurity_23320309>
 - [ ] Last successful pipeline URL: `<add URL>`
 - [ ] README includes API, security measures, CI, CVE, root cause, fix, proof
 - [ ] Screenshots of SAST/SCA reports added to `docs/screenshots/`
