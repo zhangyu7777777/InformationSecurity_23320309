@@ -1,120 +1,131 @@
-# Laboratory Work No. 1
+# 信息安全实验一
 
-## Secure REST API Development with CI/CD and CVE Analysis
+## 基于 Flask 的安全 API 与 CVE-2017-12635 复现
 
-| Field | Value |
+| 项目 | 内容 |
 |---|---|
-| Variant number | CVE-2017-12635 |
-| Student surname and name | Guo Ruihao |
-| HDU number | 23320309 |
-| Group | - |
-| Date | 2026-10-19 |
-| Repository | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
-| CI run | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39198377166> |
+| 变体 | CVE-2017-12635 |
+| 姓名 | Guo Ruihao |
+| HDU 学号 | 23320309 |
+| 小组 | 无 |
+| 日期 | 2026-10-20 |
+| 仓库 | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
+| CI 运行 | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39198485372> |
 
-## 1. Purpose
+## 一、实验目的
 
-The purpose of this work is to build a small secure REST API, add automatic
-security checks to CI, and reproduce and fix a real CVE in a Docker
-environment.
+1. 用 Flask 写一个简单的 REST API。
+2. 实现登录、JWT 验证、bcrypt 密码加密。
+3. 防 SQL 注入和 XSS。
+4. 用 GitHub Actions 自动运行测试和安全扫描。
+5. 在 Docker 里复现 CVE-2017-12635，并验证修复。
 
-## 2. Environment
+## 二、实验环境
 
-- Windows 11, Python 3.11
-- Flask 3.1, SQLite
-- bcrypt, PyJWT
-- pytest, Bandit, pip-audit
-- Docker Desktop, Docker Compose
-- Git and GitHub Actions
+- Windows 11
+- Python 3.11
+- Flask、SQLite
+- bcrypt、PyJWT
+- pytest、Bandit、pip-audit
+- Docker Desktop、Docker Compose
+- GitHub Actions
 
-## 3. API
+## 三、API 实现
 
-The API is implemented in one file, `app.py`.
+后端代码都在 `app.py` 里，数据库用 SQLite。
 
-| Method | Path | Authentication | Purpose |
+| 方法 | 路径 | 是否需要登录 | 作用 |
 |---|---|---|---|
-| POST | `/auth/login` | No | Check login and password, return a JWT |
-| GET | `/api/data` | Bearer JWT | Return posts; `?q=` searches |
-| POST | `/api/data` | Bearer JWT | Create a post |
-| GET | `/health` | No | Health check |
+| POST | `/auth/login` | 否 | 登录并返回 JWT |
+| GET | `/api/data` | 是 | 获取帖子，可用 `?q=` 搜索 |
+| POST | `/api/data` | 是 | 新增帖子 |
 
-The database is SQLite. Demo users are created on first start:
-`alice / AlicePass123!` (admin) and `bob / BobPass123!` (user).
+第一次运行会自动建表，并创建两个测试用户：
 
-## 4. Security measures
+- `alice / 123456`，管理员
+- `bob / 123456`，普通用户
 
-### SQL injection
+登录成功后返回 token。访问 `/api/data` 时要在请求头里加：
 
-All SQL statements use bound parameters:
-
-```python
-db.execute("SELECT * FROM users WHERE username = ?", (username,))
+```text
+Authorization: Bearer <token>
 ```
 
-The search endpoint also uses two `?` placeholders. A test sends
-`' OR 1=1 --` and checks that it returns zero rows.
+没有 token 或 token 错误时返回 401。
 
-### XSS
+## 四、安全措施
 
-Text from the database is escaped before it is returned:
+### 1. 防 SQL 注入
+
+所有 SQL 都用 `?` 占位符，例如：
 
 ```python
-html.escape(row["title"])
+conn.execute("SELECT * FROM users WHERE username = ?", (username,))
 ```
 
-The test stores `<script>alert(1)</script>` and checks that the response
-contains `&lt;script&gt;`.
+搜索接口也是用两个 `?`，没有把用户输入拼进 SQL。
 
-### Authentication
+测试里发送 `' OR 1=1 --`，返回结果是空列表，说明注入没有成功。
 
-- Passwords are hashed with bcrypt.
-- Login returns a JWT signed with HS256.
-- The token expires after 30 minutes.
-- Protected routes verify the token with `jwt.decode(..., algorithms=["HS256"])`.
-- A missing or invalid token returns `401`.
+### 2. 防 XSS
 
-## 5. CI/CD
+返回数据前用 `html.escape()` 转义：
 
-`.github/workflows/ci.yml` runs on every push:
+```python
+"title": html.escape(row["title"])
+```
 
-| Step | Result |
+测试里提交 `<script>alert(1)</script>`，返回的内容里不会出现可执行的
+`<script>` 标签。
+
+### 3. 登录和密码
+
+- 密码先用 bcrypt 加密，再存进数据库。
+- 登录成功后用 PyJWT 生成 token。
+- token 里包含用户 id、用户名和过期时间。
+- 后端用 `jwt.decode(..., algorithms=["HS256"])` 验证签名。
+
+## 五、CI
+
+GitHub Actions 在每次 push 时运行：
+
+| 步骤 | 结果 |
 |---|---|
 | `pytest -q` | 6 passed |
-| `bandit app.py` | no issues identified |
-| `pip-audit -r requirements.txt` | no known vulnerabilities |
+| `bandit app.py` | No issues identified |
+| `pip-audit -r requirements.txt` | No known vulnerabilities found |
 
-The Bandit and pip-audit JSON reports are uploaded as the
-`security-reports` artifact.
+Bandit 和 pip-audit 的 JSON 报告会作为 `security-reports` artifact 上传。
 
-Successful run:
-<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39198377166>
+## 六、CVE-2017-12635
 
-## 6. CVE-2017-12635
+### 1. 漏洞说明
 
-### 6.1 Description
+CVE-2017-12635 是 Apache CouchDB 2.1.1 之前的权限提升漏洞。
 
-CVE-2017-12635 is a privilege escalation vulnerability in Apache CouchDB
-before 1.7.0 and 2.x before 2.1.1. A user document with duplicate `roles`
-keys is parsed differently by the Erlang authorization code and the
-JavaScript storage code. The authorization check sees `["_admin"]`, while the
-stored document sees `[]`, so an unauthenticated attacker can create an
-administrator account.
+CouchDB 用 Erlang 写的 JSON 解析器检查权限，用 JavaScript 写的解析器保存
+用户文档。如果请求里有重复的 `roles` 键，两个解析器会看到不同的值：
 
-### 6.2 Vulnerable environment
+- 权限检查看到第一个 `roles`：`["_admin"]`
+- 保存文档看到最后一个 `roles`：`[]`
+
+这样普通用户就能把自己变成管理员。
+
+### 2. 启动漏洞环境
 
 ```bash
 cd vulhub/couchdb/CVE-2017-12635
 docker compose up -d
 ```
 
-The service listens on `http://127.0.0.1:5984`.
+服务地址是 `http://127.0.0.1:5984`。
 
-On Windows, `init.sh` may have CRLF line endings and fail with
-`$'\r': command not found`. Converting it to LF fixes the init container.
+在 Windows 上，Vulhub 的 `init.sh` 可能是 CRLF 换行，导致 init 容器报
+`$'\r': command not found`。把脚本转成 LF 后重启 init 容器即可。
 
-### 6.3 Reproduction
+### 3. 复现过程
 
-A normal request with an admin role is rejected:
+先发正常的请求，想直接设置管理员角色：
 
 ```bash
 curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
@@ -122,12 +133,13 @@ curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
   --data-binary @cve/normal_user.json
 ```
 
+结果是 403：
+
 ```text
-HTTP/1.1 403 Forbidden
 {"error":"forbidden","reason":"Only _admin may set roles"}
 ```
 
-A request with duplicate `roles` keys succeeds:
+再发带两个 `roles` 的请求：
 
 ```bash
 curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
@@ -135,12 +147,9 @@ curl -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub \
   --data-binary @cve/duplicate_roles.json
 ```
 
-```text
-HTTP/1.1 201 Created
-{"ok":true,"id":"org.couchdb.user:vulhub",...}
-```
+结果是 201 Created。
 
-The new account has the admin role:
+登录新用户：
 
 ```bash
 curl -u vulhub:vulhub http://127.0.0.1:5984/_session
@@ -150,70 +159,58 @@ curl -u vulhub:vulhub http://127.0.0.1:5984/_session
 {"ok":true,"userCtx":{"name":"vulhub","roles":["_admin"]},...}
 ```
 
-The account can create a database, which is an admin action:
+再用这个用户创建数据库：
 
-```text
-PUT /evil_db -> HTTP/1.1 201 Created
+```bash
+curl -i -u vulhub:vulhub -X PUT http://127.0.0.1:5984/evil_db
 ```
 
-### 6.4 Root cause
+返回 201，说明已经拿到管理员权限。
 
-The vulnerability is a **parser differential**. CouchDB uses more than one
-JSON parser. The Erlang parser used for the authorization check keeps the
-first `roles` key, while the JavaScript parser used for the stored document
-keeps the last one. Both parts of the program believe they are working with
-the same document, but they see different roles.
+### 4. 原因分析
 
-### 6.5 Fix
+这个漏洞不是 SQL 注入，也不是密码泄露，而是**两个 JSON 解析器对重复键的
+处理不一致**。
 
-The fixed environment uses CouchDB 2.1.1:
+同一个请求在权限检查阶段和保存阶段被解析成了两个不同的用户文档。权限检查
+看到管理员角色，保存时却保存了普通角色，最后数据库里的用户就变成了管理员。
+
+### 5. 修复
+
+把 CouchDB 升级到 2.1.1：
 
 ```bash
 docker compose -f cve/fixed/docker-compose.yml up -d
 ```
 
-The patched version still accepts the duplicate key, but both parsers now
-use the same value. The stored document has `"roles":[]`, and the session
-has no admin role.
+修复版运行在 `http://127.0.0.1:5985`。
 
-This is a good fix because it removes the parser disagreement without
-changing the normal registration workflow.
+### 6. 修复验证
 
-### 6.6 Verification
-
-| Check | CouchDB 2.1.0 | CouchDB 2.1.1 |
+| 检查项 | CouchDB 2.1.0 | CouchDB 2.1.1 |
 |---|---|---|
-| Normal admin request | 403 | 403 |
-| Duplicate `roles` request | 201 | 201 |
-| Session roles | `["_admin"]` | `[]` |
-| Create database | 201 | 401 |
-| Normal user registration | 201 | 201 |
+| 正常设置 `_admin` | 403 | 403 |
+| 重复 `roles` 请求 | 201 | 201 |
+| 登录后的角色 | `["_admin"]` | `[]` |
+| 创建数据库 | 201 | 401 |
+| 普通用户注册 | 201 | 201 |
 
-The last row is the regression test: ordinary registration still works after
-the fix.
+2.1.1 里重复键仍然会被接受，但两个解析器看到的值一致，所以用户不会拿到
+管理员角色。普通用户注册仍然返回 201，说明修复没有破坏正常功能。
 
-### 6.7 Screenshots
+### 7. 截图
 
-![Vulnerable CouchDB](docs/screenshots/cve-before.png)
+![漏洞复现](docs/screenshots/cve-before.png)
 
-![Fixed CouchDB](docs/screenshots/cve-after.png)
+![修复验证](docs/screenshots/cve-after.png)
 
 ![GitHub Actions](docs/screenshots/ci-success.png)
 
-## 7. Conclusion
+## 七、总结
 
-The API demonstrates basic protections against SQL injection, XSS, and broken
-authentication. GitHub Actions repeats the tests and security scans on every
-push. The CVE part shows that a parser difference can break an access-control
-check even when the application logic looks correct. Upgrading CouchDB to
-2.1.1 removes the privilege escalation, and normal user registration still
-works.
+这次实验让我了解了 SQL 注入、XSS、JWT 和密码哈希的基本写法，也学会了用
+Bandit 和 pip-audit 做自动检查。
 
-## 8. Submission checklist
-
-- [x] Public GitHub repository.
-- [x] Successful GitHub Actions run.
-- [x] API source code and tests.
-- [x] CVE reproduction and fix.
-- [x] Evidence screenshots.
-- [x] Variant, surname, name, and HDU number filled in.
+CVE 部分让我印象比较深的是：代码看起来没有问题，但如果两个组件对同一个
+输入的理解不一样，也可能出现权限绕过。修复时升级版本是最直接的方法，同时
+还要测试正常功能有没有被影响。
