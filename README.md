@@ -123,7 +123,7 @@ pip-audit: No known vulnerabilities found
 
 流水线地址：
 
-<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39357481035>
+<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39358191446>
 
 ![SAST 和 SCA 结果](screenshots/security-check.png)
 
