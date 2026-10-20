@@ -66,12 +66,21 @@ py -3 -m venv .venv
 
 ## 三、接口
 
+Windows 用户注意：cmd.exe 不能用单引号包 JSON，否则 Flask 会返回
+`400 Bad Request`。下面分别给出 cmd 和 PowerShell 的写法。
+
 ### 1. 登录
 
-```bash
-curl -X POST http://127.0.0.1:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"login":"alice","password":"123456"}'
+在 cmd.exe 里（注意 JSON 里的双引号要加反斜杠）：
+
+```bat
+curl.exe -X POST http://127.0.0.1:5000/auth/login -H "Content-Type: application/json" -d "{\"login\":\"alice\",\"password\":\"123456\"}"
+```
+
+在 PowerShell 里：
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:5000/auth/login -Method Post -ContentType "application/json" -Body '{"login":"alice","password":"123456"}'
 ```
 
 返回：
@@ -82,20 +91,24 @@ curl -X POST http://127.0.0.1:5000/auth/login \
 
 ### 2. 获取数据
 
-```bash
-curl http://127.0.0.1:5000/api/data \
-  -H "Authorization: Bearer 这里填token"
+```bat
+curl.exe http://127.0.0.1:5000/api/data -H "Authorization: Bearer 这里填token"
 ```
 
 不带 token 会返回 401。加 `?q=关键词` 可以搜索。
 
 ### 3. 添加数据
 
-```bash
-curl -X POST http://127.0.0.1:5000/api/data \
-  -H "Authorization: Bearer 这里填token" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"标题","body":"内容"}'
+在 cmd.exe 里：
+
+```bat
+curl.exe -X POST http://127.0.0.1:5000/api/data -H "Authorization: Bearer 这里填token" -H "Content-Type: application/json" -d "{\"title\":\"标题\",\"body\":\"内容\"}"
+```
+
+在 PowerShell 里：
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:5000/api/data -Method Post -Headers @{Authorization="Bearer 这里填token"} -ContentType "application/json" -Body '{"title":"标题","body":"内容"}'
 ```
 
 ### 测试结果
