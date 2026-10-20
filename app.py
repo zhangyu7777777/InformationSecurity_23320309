@@ -2,6 +2,7 @@ import html
 import os
 import sqlite3
 from datetime import datetime, timedelta
+from functools import wraps
 
 import bcrypt
 import jwt
@@ -87,6 +88,17 @@ def current_user():
         return None
 
 
+def login_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        user = current_user()
+        if user is None:
+            return jsonify({"error": "please login"}), 401
+        return func(user, *args, **kwargs)
+
+    return wrapper
+
+
 @app.route("/auth/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -113,11 +125,8 @@ def login():
 
 
 @app.route("/api/data", methods=["GET"])
-def get_data():
-    user = current_user()
-    if user is None:
-        return jsonify({"error": "please login"}), 401
-
+@login_required
+def get_data(user):
     q = request.args.get("q", "")
     conn = get_db()
     if q:
@@ -152,11 +161,8 @@ def get_data():
 
 
 @app.route("/api/data", methods=["POST"])
-def add_data():
-    user = current_user()
-    if user is None:
-        return jsonify({"error": "please login"}), 401
-
+@login_required
+def add_data(user):
     data = request.get_json()
     if not data:
         return jsonify({"error": "bad request"}), 400

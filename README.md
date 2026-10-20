@@ -99,6 +99,7 @@ q=' OR 1=1 --                  -> []
 3. **密码**：用 bcrypt 加密后存数据库，不存明文。
 4. **登录**：登录成功后发 JWT，访问受保护接口要带
    `Authorization: Bearer <token>`。token 用 HS256 验证。
+   两个受保护接口都加了 `@login_required`，会先检查 token。
 
 我测试了 SQL 注入字符串 `' OR 1=1 --`，搜索结果是空列表；提交
 `<script>alert(1)</script>` 后，返回内容里没有可执行的 `<script>`。
