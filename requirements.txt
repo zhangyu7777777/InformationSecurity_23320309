@@ -1,6 +1,5 @@
 flask
 bcrypt
 PyJWT
-pytest
 bandit
 pip-audit
