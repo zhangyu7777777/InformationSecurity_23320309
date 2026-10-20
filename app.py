@@ -135,6 +135,7 @@ def get_data(user):
             SELECT posts.id, posts.title, posts.body, users.username
             FROM posts JOIN users ON users.id = posts.user_id
             WHERE posts.title LIKE ? OR posts.body LIKE ?
+            ORDER BY posts.id DESC
             """,
             ("%" + q + "%", "%" + q + "%"),
         ).fetchall()
@@ -143,6 +144,7 @@ def get_data(user):
             """
             SELECT posts.id, posts.title, posts.body, users.username
             FROM posts JOIN users ON users.id = posts.user_id
+            ORDER BY posts.id DESC
             """
         ).fetchall()
     conn.close()
