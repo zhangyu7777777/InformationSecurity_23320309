@@ -272,9 +272,7 @@ docker compose down
 直接用 CouchDB 2.1.1 的镜像启动一个修复版：
 
 ```bash
-docker run -d --name couchdb-fixed -p 5985:5984 \
-  -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password \
-  couchdb:2.1.1
+docker run -d --name couchdb-fixed -p 5985:5984 -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password couchdb:2.1.1
 
 curl -X PUT http://admin:password@127.0.0.1:5985/_users
 ```
