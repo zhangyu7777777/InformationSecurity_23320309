@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-DB = os.environ.get("DATABASE", "app.db")
+DB = os.environ.get("DATABASE", "lab.db")
 SECRET = os.environ.get("JWT_SECRET", "this-is-a-simple-secret-key-123456")
 
 

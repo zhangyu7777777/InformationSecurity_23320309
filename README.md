@@ -31,14 +31,31 @@ screenshots/            实验截图
 
 ## 二、运行方法
 
+先进入项目文件夹：
+
 ```powershell
+cd "C:\Users\29611\Desktop\信息安全\lab\secure-api"
+
+# 如果之前运行过旧版本，先删掉旧数据库
+Remove-Item app.db, lab.db -ErrorAction SilentlyContinue
+
 py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python app.py
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe app.py
 ```
 
 程序运行在 `http://127.0.0.1:5000`。
+
+### 常见问题
+
+1. 提示 `Activate.ps1 cannot be loaded`：不用激活虚拟环境，直接运行
+   `.\.venv\Scripts\python.exe app.py`。
+2. 提示 `No module named 'flask'`：说明运行的是系统 Python。请使用
+   `.\.venv\Scripts\python.exe`，不要直接输入 `python`。
+3. 访问 `/api/data` 报 500，或者提示 `no such column: posts.user_id`：
+   删除旧的 `app.db` / `lab.db`，再重新运行。
+4. 提示 5000 端口被占用：关掉之前启动的 Python 进程，或者把 `app.py`
+   最后一行的端口改成 `5001`。
 
 数据库用 SQLite，第一次运行会自动建表，并创建两个测试用户：
 
