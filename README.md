@@ -186,6 +186,15 @@ docker compose up -d
 
 服务地址是 `http://127.0.0.1:5984`。
 
+如果访问时返回 `404 Database does not exist`，说明 init 容器没有创建系统库，
+手动执行下面三条命令：
+
+```bat
+curl.exe -X PUT http://admin:password@127.0.0.1:5984/_users
+curl.exe -X PUT http://admin:password@127.0.0.1:5984/_replicator
+curl.exe -X PUT http://admin:password@127.0.0.1:5984/_global_changes
+```
+
 Windows 下如果 init 容器报 `$'\r': command not found`，说明 `init.sh`
 是 CRLF 换行。用编辑器把它改成 LF，然后执行
 `docker compose restart initd`。
@@ -219,6 +228,9 @@ curl.exe -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub -H "Cont
 ```text
 201 Created
 ```
+
+如果返回 `409 Conflict`，说明这个用户已经存在，把请求里的 `vulhub` 换成
+另一个名字（例如 `poc123`）再试。
 
 登录新用户：
 
