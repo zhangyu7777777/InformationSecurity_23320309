@@ -11,6 +11,14 @@
 | 日期 | 2026-10-20 |
 | 仓库 | <https://github.com/zhangyu7777777/InformationSecurity_23320309> |
 
+## 实验目的
+
+1. 用 Flask 写一个简单的 REST API。
+2. 实现登录、JWT 验证和 bcrypt 密码加密。
+3. 防 SQL 注入和 XSS。
+4. 用 GitHub Actions 自动运行 Bandit 和 pip-audit。
+5. 在 Docker 里复现 CVE-2017-12635，并验证修复。
+
 ## 一、文件说明
 
 ```text
@@ -73,6 +81,16 @@ curl -X POST http://127.0.0.1:5000/api/data \
   -d '{"title":"标题","body":"内容"}'
 ```
 
+### 测试结果
+
+```text
+登录 alice/123456              -> 200，返回 token
+不带 token 访问 /api/data      -> 401
+带 token 访问 /api/data        -> 200
+q=' OR 1=1 --                  -> []
+提交 <script>alert(1)</script> -> 返回内容已转义
+```
+
 ## 四、安全措施
 
 1. **SQL 注入**：SQL 里用 `?` 占位符，例如
@@ -104,7 +122,9 @@ pip-audit: No known vulnerabilities found
 
 流水线地址：
 
-<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39357288884>
+<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39357481035>
+
+![SAST 和 SCA 结果](screenshots/security-check.png)
 
 ## 六、CVE-2017-12635
 
@@ -211,6 +231,13 @@ curl -i -u vulhub:vulhub -X PUT http://127.0.0.1:5984/evil_db
 
 ### 5. 修复
 
+先把漏洞环境停掉：
+
+```bash
+cd vulhub/couchdb/CVE-2017-12635
+docker compose down
+```
+
 直接用 CouchDB 2.1.1 的镜像启动一个修复版：
 
 ```bash
@@ -222,6 +249,9 @@ curl -X PUT http://admin:password@127.0.0.1:5985/_users
 ```
 
 修复版地址是 `http://127.0.0.1:5985`。
+
+这次修复只是升级 CouchDB 镜像版本，没有修改 Dockerfile 或 compose 文件，
+所以不需要额外的 fix 文件夹。
 
 ### 6. 修复验证
 
