@@ -87,7 +87,7 @@ No known vulnerabilities found
 
 GitHub Actions 每次 push 都会自动运行这些检查：
 
-<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions>
+<https://github.com/zhangyu7777777/InformationSecurity_23320309/actions/runs/39356752214>
 
 ## CVE-2017-12635
 
